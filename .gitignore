@@ -10,3 +10,6 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# test fixture scratch (tests/test.sh, tests/test.ps1)
+.tmp-test/

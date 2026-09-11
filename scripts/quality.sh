@@ -49,12 +49,32 @@ while [ $# -gt 0 ]; do
 done
 
 # ── Project root ─────────────────────────────────────────────────────────────
+#
+# Precedence, and the reasoning for it:
+#
+#   1. An explicit project argument always wins.
+#
+#   2. If this script is an *installed* copy - it lives at
+#      <proj>/.githooks/lib/quality.sh - then <proj> is the project. This is
+#      checked before git, and deliberately so. Resolving through the caller's
+#      cwd means running the copy that belongs to project A from inside project
+#      B silently grades B instead of A. That is not hypothetical: it broke this
+#      repo's own test suite the moment the harness became a git repository, and
+#      the same mistake would hit anyone whose project sits inside another repo.
+#
+#   3. Otherwise this is the plugin's copy being pointed at a project, where the
+#      git root of the caller's cwd is the right answer.
+#
+#   4. Otherwise fall back to this script's grandparent.
 if [ -z "$PROJECT_DIR" ]; then
-  if PROJECT_DIR=$(git rev-parse --show-toplevel 2>/dev/null) && [ -n "$PROJECT_DIR" ]; then
+  SELF_ROOT=$(CDPATH= cd -- "$SELF_DIR/../.." 2>/dev/null && pwd)
+
+  if [ -n "$SELF_ROOT" ] && [ -f "$SELF_ROOT/.githooks/lib/quality.sh" ]; then
+    PROJECT_DIR="$SELF_ROOT"
+  elif PROJECT_DIR=$(git rev-parse --show-toplevel 2>/dev/null) && [ -n "$PROJECT_DIR" ]; then
     :
   else
-    # lib/ -> .githooks/ -> project root
-    PROJECT_DIR=$(CDPATH= cd -- "$SELF_DIR/../.." && pwd)
+    PROJECT_DIR="$SELF_ROOT"
   fi
 fi
 

@@ -241,6 +241,11 @@ printf 'name: fixture_app\nenvironment:\n  sdk: ^3.11.0\n' > "$PROJ/pubspec.yaml
 printf 'include: package:flutter_lints/flutter.yaml\n'      > "$PROJ/analysis_options.yaml"
 printf 'void main() {}\n' > "$PROJ/lib/main.dart"
 printf 'void main() {}\n' > "$PROJ/test/widget_test.dart"
+
+# The fixture must be its own git repository. quality.sh resolves the project
+# root with `git rev-parse --show-toplevel`, and this fixture lives inside the
+# harness repository when the suite runs - without its own .git, the resolution
+# escapes to the harness root and reads the wrong .githooks/.profile.
 ( cd "$PROJ" && git init -q . ) >/dev/null 2>&1
 
 # All three runners, so the parity checks below have something to compare.
@@ -532,6 +537,24 @@ fi
 # The files the README promises must exist.
 assert_file "$REPO_DIR/docs/GETTING_STARTED.md" "docs/GETTING_STARTED.md exists (README links it)"
 assert_file "$REPO_DIR/docs/WINDOWS.md"         "docs/WINDOWS.md exists (README links it)"
+
+# The landing page links to these by filename, so a rename here silently turns
+# those buttons into a blank issue form. GitHub redirects an unknown template to
+# the generic new-issue page, so the link still returns 200 and nothing looks
+# broken until someone clicks it.
+assert_file "$REPO_DIR/.github/ISSUE_TEMPLATE/bug_report.md" \
+  ".github/ISSUE_TEMPLATE/bug_report.md exists (the landing page links to it)"
+assert_file "$REPO_DIR/.github/ISSUE_TEMPLATE/feature_request.md" \
+  ".github/ISSUE_TEMPLATE/feature_request.md exists (the landing page links to it)"
+
+for tpl in bug_report feature_request; do
+  f="$REPO_DIR/.github/ISSUE_TEMPLATE/$tpl.md"
+  if head -1 "$f" 2>/dev/null | grep -q '^---$' && grep -q '^name: ' "$f" 2>/dev/null; then
+    pass "$tpl.md has the frontmatter GitHub needs to list it"
+  else
+    fail "$tpl.md is missing its YAML frontmatter - GitHub will not offer it as a template"
+  fi
+done
 
 # ═══════════════════════════════════════════════════════════════════════════
 section "11. Installer"

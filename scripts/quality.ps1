@@ -62,6 +62,16 @@ function Resolve-ProjectDir {
 
     if ($Explicit) { return (Resolve-Path -LiteralPath $Explicit).Path }
 
+    $selfRoot = (Resolve-Path -LiteralPath (Join-Path $SelfDir '..\..')).Path
+
+    # If this is an installed copy (<proj>\.githooks\lib\quality.ps1) that project
+    # wins, and it is checked before git on purpose. Resolving through the
+    # caller's cwd means running project A's copy from inside project B grades B
+    # instead of A. Mirrors the precedence in quality.sh.
+    if (Test-Path -LiteralPath (Join-Path $selfRoot '.githooks\lib\quality.ps1')) {
+        return $selfRoot
+    }
+
     try {
         $top = & git rev-parse --show-toplevel 2>$null
         if ($LASTEXITCODE -eq 0 -and $top) {
@@ -69,8 +79,7 @@ function Resolve-ProjectDir {
         }
     } catch { }
 
-    # lib\ -> .githooks\ -> project root
-    return (Resolve-Path -LiteralPath (Join-Path $SelfDir '..\..')).Path
+    return $selfRoot
 }
 
 $SelfDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
