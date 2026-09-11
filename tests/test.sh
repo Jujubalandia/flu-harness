@@ -560,6 +560,54 @@ done
 section "11. Installer"
 # ═══════════════════════════════════════════════════════════════════════════
 
+# The piped install is the first command the landing page shows a visitor, and
+# it is the one path a checkout-based test never exercises: when a script arrives
+# on stdin, $0 is just "sh", there is no repository next to it, and an installer
+# that only knows how to copy a local directory simply fails. It did.
+#
+# This runs the real thing - script piped through stdin - against a tarball built
+# from this working tree, so the test needs no network and cannot pass by
+# accident.
+if command -v tar >/dev/null 2>&1; then
+  PIPE_TB="$TMPBASE/piped"
+  mkdir -p "$PIPE_TB/src"
+  cp -R "$REPO_DIR" "$PIPE_TB/src/flu-harness-main"
+  rm -rf "$PIPE_TB/src/flu-harness-main/.git" "$PIPE_TB/src/flu-harness-main/.tmp-test"
+  ( cd "$PIPE_TB/src" && tar -czf "$PIPE_TB/flu-harness-main.tar.gz" flu-harness-main ) 2>/dev/null
+
+  PIPE_PREFIX="$TMPBASE/piped-prefix"
+  PIPE_OUT=$( cd "$TMPBASE" && HARNESS_TARBALL_URL="file://$PIPE_TB/flu-harness-main.tar.gz" \
+              sh -s -- --prefix "$PIPE_PREFIX" < "$REPO_DIR/scripts/install.sh" 2>&1 )
+  PIPE_RC=$?
+
+  [ "$PIPE_RC" -eq 0 ] \
+    && pass "piped install exits 0" \
+    || fail "piped install exited $PIPE_RC: $(printf '%s' "$PIPE_OUT" | tail -3 | tr '\n' ' ')"
+
+  assert_file "$PIPE_PREFIX/.installed"                    "piped install stamps .installed"
+  assert_file "$PIPE_PREFIX/scripts/doctor.sh"             "piped install copies the doctor"
+  assert_file "$PIPE_PREFIX/scripts/quality.ps1"           "piped install copies the PowerShell runner"
+  assert_file "$PIPE_PREFIX/git-hooks/pre-commit"          "piped install copies the hook"
+  assert_file "$PIPE_PREFIX/git-hooks/profiles/strict/gates.def" "piped install copies the gate profiles"
+  assert_dir  "$PIPE_PREFIX/templates/rules"               "piped install copies the rules"
+  check_lf "$PIPE_PREFIX/git-hooks/pre-commit"             "pre-commit from a piped install"
+
+  # The failure path must name the problem, not fail silently or half-install.
+  BAD_OUT=$( cd "$TMPBASE" && HARNESS_TARBALL_URL="file://$PIPE_TB/does-not-exist.tar.gz" \
+             sh -s -- --prefix "$TMPBASE/nope" < "$REPO_DIR/scripts/install.sh" 2>&1 )
+  BAD_RC=$?
+  [ "$BAD_RC" -ne 0 ] \
+    && pass "a failed download exits non-zero" \
+    || fail "a failed download exited 0"
+  printf '%s' "$BAD_OUT" | grep -qi 'download failed\|clone instead' \
+    && pass "a failed download says what to do instead" \
+    || fail "a failed download gave no usable message"
+else
+  skip "piped install (no tar available)"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════
+
 PREFIX="$TMPBASE/install-prefix"
 assert_exit 0 "install.sh runs" sh "$REPO_DIR/scripts/install.sh" --prefix "$PREFIX" --from "$REPO_DIR"
 assert_file "$PREFIX/.installed"                       "installer stamps .installed"

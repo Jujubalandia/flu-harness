@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-SELF_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+SELF_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd) || SELF_DIR=$(pwd)
 
 # ── Uninstall ────────────────────────────────────────────────────────────────
 if [ -n "$UNINSTALL" ]; then
@@ -48,20 +48,96 @@ if [ -n "$UNINSTALL" ]; then
 fi
 
 # ── Find the source ──────────────────────────────────────────────────────────
-# A checkout of this repo has .claude-plugin/ next to scripts/.
+#
+# Two ways in, and the second one is the reason this block is not four lines:
+#
+#   * A checkout.  ./scripts/install.sh, or the script sitting next to
+#     .claude-plugin/ in a clone.
+#
+#   * Piped.       curl -fsSL <raw-url>/install.sh | sh
+#
+# The piped form is what the landing page advertises, and it is the one that
+# cannot find anything: when a script arrives on stdin, $0 is just "sh", so
+# there is no repository next to it and nothing on disk to copy. An earlier
+# version of this script simply failed there, which meant the first command a
+# visitor to the site runs did not work. So the piped case downloads a tarball
+# of the repository and installs from that.
+#
+# HARNESS_REF picks a branch or tag to download (default: main).
+
+TMP_FETCH=""
+cleanup_fetch() {
+  if [ -n "$TMP_FETCH" ] && [ -d "$TMP_FETCH" ]; then
+    rm -rf "$TMP_FETCH" || true
+  fi
+}
+trap cleanup_fetch EXIT HUP INT TERM
+
 if [ -z "$FROM" ]; then
   if [ -d "$SELF_DIR/../.claude-plugin" ]; then
     FROM=$(CDPATH= cd -- "$SELF_DIR/.." && pwd)
-  else
+  elif [ -d "$SELF_DIR/scripts" ]; then
     FROM=$(CDPATH= cd -- "$SELF_DIR" && pwd)
+  else
+    FROM=""
   fi
 fi
 
-if [ ! -d "$FROM/scripts" ]; then
+# An explicit --from that does not hold a checkout is a user error worth naming.
+if [ -n "$FROM" ] && [ ! -d "$FROM/scripts" ]; then
   printf 'ERROR: %s does not look like a flu-harness checkout (no scripts/).\n' "$FROM" >&2
   printf '       Pass --from /path/to/flu-harness, or clone it first:\n' >&2
   printf '         git clone https://github.com/Jujubalandia/flu-harness ~/.flu-harness\n' >&2
   exit 1
+fi
+
+if [ -z "$FROM" ]; then
+  REF="${HARNESS_REF:-main}"
+  # HARNESS_TARBALL_URL is for forks, private mirrors, and the test suite, which
+  # points it at a file:// tarball so the piped path can be tested offline.
+  TARBALL="${HARNESS_TARBALL_URL:-https://github.com/Jujubalandia/flu-harness/archive/refs/heads/$REF.tar.gz}"
+
+  if ! command -v tar >/dev/null 2>&1; then
+    printf 'ERROR: tar is required to install from a pipe.\n' >&2
+    printf '       Clone instead:\n' >&2
+    printf '         git clone https://github.com/Jujubalandia/flu-harness ~/.flu-harness\n' >&2
+    exit 1
+  fi
+
+  TMP_FETCH=$(mktemp -d 2>/dev/null) || TMP_FETCH=""
+  if [ -z "$TMP_FETCH" ]; then
+    printf 'ERROR: could not create a temporary directory.\n' >&2
+    exit 1
+  fi
+
+  printf 'Downloading flu-harness (%s)...\n' "$REF"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$TARBALL" | tar -xz -C "$TMP_FETCH" || {
+      printf 'ERROR: download failed: %s\n' "$TARBALL" >&2
+      printf '       Check the ref, or clone it instead.\n' >&2
+      exit 1
+    }
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- "$TARBALL" | tar -xz -C "$TMP_FETCH" || {
+      printf 'ERROR: download failed: %s\n' "$TARBALL" >&2
+      exit 1
+    }
+  else
+    printf 'ERROR: neither curl nor wget is available to download the repository.\n' >&2
+    printf '       Clone instead:\n' >&2
+    printf '         git clone https://github.com/Jujubalandia/flu-harness ~/.flu-harness\n' >&2
+    exit 1
+  fi
+
+  # The archive extracts to flu-harness-<ref>/, one directory deep.
+  for candidate in "$TMP_FETCH"/*/; do
+    if [ -d "$candidate/scripts" ]; then FROM="${candidate%/}"; break; fi
+  done
+
+  if [ -z "$FROM" ]; then
+    printf 'ERROR: the downloaded archive did not contain scripts/.\n' >&2
+    exit 1
+  fi
 fi
 
 # ── Refuse to clobber silently ───────────────────────────────────────────────

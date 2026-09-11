@@ -67,22 +67,46 @@ Update with `/plugin update flu-harness`, remove with
 ### Standalone (optional)
 
 If you want the doctor and gate runners without Claude Code, there is an
-installer for each shell. They produce an identical layout.
+installer for each shell. They produce an identical layout in `~/.flu-harness`.
+
+From a clone:
 
 ```bash
-# Git Bash / Linux / macOS
-./scripts/install.sh                       # -> ~/.flu-harness
+./scripts/install.sh                       # Git Bash, macOS, Linux
 ```
 
 ```powershell
-# PowerShell
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
 ```bat
-rem cmd.exe
 scripts\install.cmd
 ```
+
+Without cloning, straight from the repository:
+
+```bash
+# Git Bash, macOS, Linux
+curl -fsSL https://raw.githubusercontent.com/Jujubalandia/flu-harness/main/scripts/install.sh | sh
+```
+
+```powershell
+# PowerShell
+irm https://raw.githubusercontent.com/Jujubalandia/flu-harness/main/scripts/install.ps1 | iex
+```
+
+The piped form downloads a tarball of the repository to a temporary directory,
+installs from it, and removes it. `HARNESS_REF` picks a branch or tag;
+`HARNESS_TARBALL_URL` overrides the download for a fork or a mirror.
+
+| Flag / variable | Effect |
+|-----------------|--------|
+| `--prefix DIR` / `-Prefix DIR` | install somewhere other than `~/.flu-harness` |
+| `--from DIR` / `-From DIR` | install from a specific checkout |
+| `--force` / `-Force` | overwrite an existing install |
+| `--uninstall` / `-Uninstall` | remove the install |
+| `HARNESS_REF` | branch or tag to download (default `main`) |
+| `HARNESS_TARBALL_URL` | full download URL; must be a `.zip` for PowerShell |
 
 ---
 

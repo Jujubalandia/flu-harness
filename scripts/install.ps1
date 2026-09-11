@@ -53,22 +53,91 @@ if ($Uninstall) {
 }
 
 # -- Find the source ---------------------------------------------------------
-if (-not $From) {
-    $parent = Split-Path $SelfDir -Parent
-    if (Test-Path -LiteralPath (Join-Path $parent '.claude-plugin')) {
-        $From = $parent
-    } else {
-        $From = $SelfDir
+#
+# Two ways in, and the second one is why this block is not five lines:
+#
+#   * A checkout.  .\scripts\install.ps1, or the script sitting next to
+#     .claude-plugin\ in a clone.
+#
+#   * Piped.       irm <raw-url>/install.ps1 | iex
+#
+# The piped form cannot find anything: Invoke-Expression has no $PSScriptRoot,
+# so there is no repository next to the script and nothing on disk to copy. The
+# POSIX installer had the same hole, which meant the first command a visitor to
+# the landing page runs did not work. The piped case downloads a tarball of the
+# repository and installs from that.
+#
+# HARNESS_REF picks a branch or tag (default: main).
+# HARNESS_TARBALL_URL overrides the download entirely, for forks and mirrors.
+# It must point at a .zip, because Expand-Archive cannot read a .tar.gz.
+
+$TempFetch = $null
+
+function Remove-TempFetch {
+    if ($script:TempFetch -and (Test-Path -LiteralPath $script:TempFetch)) {
+        Remove-Item -LiteralPath $script:TempFetch -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
-$From = (Resolve-Path -LiteralPath $From).Path
 
-if (-not (Test-Path -LiteralPath (Join-Path $From 'scripts'))) {
+if (-not $From) {
+    $parent = if ($SelfDir) { Split-Path $SelfDir -Parent } else { '' }
+    if ($parent -and (Test-Path -LiteralPath (Join-Path $parent '.claude-plugin'))) {
+        $From = $parent
+    } elseif (Test-Path -LiteralPath (Join-Path $SelfDir 'scripts')) {
+        $From = $SelfDir
+    } else {
+        $From = ''
+    }
+}
+
+# An explicit -From that does not hold a checkout is a user error worth naming.
+if ($From -and -not (Test-Path -LiteralPath (Join-Path $From 'scripts'))) {
     Write-Host "ERROR: $From does not look like a flu-harness checkout (no scripts\)." -ForegroundColor Red
     Write-Host '       Pass -From C:\path\to\flu-harness, or clone it first:' -ForegroundColor DarkGray
     Write-Host '         git clone https://github.com/Jujubalandia/flu-harness $env:USERPROFILE\.flu-harness' -ForegroundColor DarkGray
     exit 1
 }
+
+if (-not $From) {
+    $Ref = if ($env:HARNESS_REF) { $env:HARNESS_REF } else { 'main' }
+    # A .zip, not the .tar.gz the POSIX installer uses: Expand-Archive reads
+    # zip only. HARNESS_TARBALL_URL must therefore point at a zip as well.
+    $Tarball = if ($env:HARNESS_TARBALL_URL) {
+        $env:HARNESS_TARBALL_URL
+    } else {
+        "https://github.com/Jujubalandia/flu-harness/archive/refs/heads/$Ref.zip"
+    }
+
+    $TempFetch = Join-Path ([System.IO.Path]::GetTempPath()) ("flu-harness-fetch-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Force -Path $TempFetch | Out-Null
+
+    Write-Host "Downloading flu-harness ($Ref)..."
+    try {
+        $archive = Join-Path $TempFetch 'source.zip'
+        Invoke-WebRequest -Uri $Tarball -OutFile $archive -UseBasicParsing -ErrorAction Stop
+        Expand-Archive -LiteralPath $archive -DestinationPath $TempFetch -Force -ErrorAction Stop
+    } catch {
+        Remove-TempFetch
+        Write-Host "ERROR: download failed: $Tarball" -ForegroundColor Red
+        Write-Host "       $_" -ForegroundColor DarkGray
+        Write-Host '       Clone instead:' -ForegroundColor DarkGray
+        Write-Host '         git clone https://github.com/Jujubalandia/flu-harness $env:USERPROFILE\.flu-harness' -ForegroundColor DarkGray
+        exit 1
+    }
+
+    # The archive extracts to flu-harness-<ref>\, one directory deep.
+    $found = Get-ChildItem -LiteralPath $TempFetch -Directory -ErrorAction SilentlyContinue |
+             Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'scripts') } |
+             Select-Object -First 1
+    if (-not $found) {
+        Remove-TempFetch
+        Write-Host 'ERROR: the downloaded archive did not contain scripts\.' -ForegroundColor Red
+        exit 1
+    }
+    $From = $found.FullName
+}
+
+$From = (Resolve-Path -LiteralPath $From).Path
 
 # -- Refuse to clobber silently ---------------------------------------------
 if ((Test-Path -LiteralPath $Prefix) -and -not $Force) {
@@ -137,6 +206,9 @@ foreach ($s in Get-ChildItem -Path (Join-Path $Prefix 'scripts') -Filter '*.sh' 
         [System.IO.File]::WriteAllText($s.FullName, $text.Replace("`r`n", "`n"))
     }
 }
+
+# -- Drop the downloaded copy, it has served its purpose ---------------------
+Remove-TempFetch
 
 # -- Stamp -------------------------------------------------------------------
 [System.IO.File]::WriteAllText((Join-Path $Prefix '.installed'),
