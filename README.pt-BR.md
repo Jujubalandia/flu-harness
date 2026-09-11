@@ -7,6 +7,9 @@ Framework de desenvolvimento para publicar apps Flutter na App Store + Play Stor
 Feito para o Claude Code, com um wizard de projeto, uma verificação de saúde de 26 itens e
 quality gates que rodam nativamente em **PowerShell, CMD e Git Bash** no Windows.
 
+**Site: <https://flu-harness.netlify.app>** · código em
+[flu-harness-landing](https://github.com/Jujubalandia/flu-harness-landing).
+
 Novo por aqui? [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) é o walkthrough
 condensado de pasta vazia → app publicado. [`docs/WINDOWS.md`](docs/WINDOWS.md) é a
 referência de shell, incluindo os quatro bugs de Windows que este harness existe para

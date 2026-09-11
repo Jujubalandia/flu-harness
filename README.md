@@ -7,6 +7,9 @@ Development framework to ship Flutter apps to the App Store + Play Store in ≤2
 Built for Claude Code, with a project wizard, a 26-check health check, and quality
 gates that run natively in **PowerShell, CMD and Git Bash** on Windows.
 
+**Site: <https://flu-harness.netlify.app>** · source at
+[flu-harness-landing](https://github.com/Jujubalandia/flu-harness-landing).
+
 New here? [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) is the condensed
 empty-folder → shipped-app walkthrough. [`docs/WINDOWS.md`](docs/WINDOWS.md) is
 the shell reference, including four Windows bugs this harness exists to prevent.
