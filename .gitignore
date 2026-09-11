@@ -1,0 +1,12 @@
+# flu-harness persistent state (hook profile memory)
+.profile
+.harness-profile
+
+# Local scratch
+*.local
+.local/
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini

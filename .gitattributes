@@ -1,0 +1,61 @@
+# flu-harness — line-ending policy.
+#
+# On Windows this file is not cosmetic, it is load-bearing.
+#
+# Git for Windows runs every hook in .githooks/ through its bundled
+# sh.exe. If a hook is checked out with CRLF the shebang line becomes
+# "#!/bin/sh\r", sh.exe looks for an interpreter literally named
+# "/bin/sh\r", and the hook dies with a message that looks nothing like
+# the real cause. Text=auto alone is not enough here: a repo cloned on a
+# machine where core.autocrlf=true would still convert these.
+#
+# So: force LF for every script Git or a shell may execute, in every
+# checkout, on every platform.
+
+* text=auto eol=lf
+
+# Shell + hook scripts: LF is mandatory, never normalise.
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.cmd           text eol=lf
+*.bat           text eol=lf
+*.ps1           text eol=lf
+*.psm1          text eol=lf
+*.psd1          text eol=lf
+*.zsh           text eol=lf
+.githooks/*     text eol=lf
+git-hooks/**    text eol=lf
+scripts/**      text eol=lf
+tests/**        text eol=lf
+
+# Shell-ish files with no extension (git hooks themselves).
+pre-commit      text eol=lf
+pre-push        text eol=lf
+post-merge      text eol=lf
+commit-msg      text eol=lf
+
+# Markup and config: normalise to LF, diffs stay readable.
+*.md            text eol=lf
+*.json          text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+*.dart          text eol=lf
+*.tmpl          text eol=lf
+*.stub          text eol=lf
+
+# Windows-only project files must keep CRLF or MSBuild gets grumpy.
+*.sln           text eol=crlf
+*.vcxproj       text eol=crlf
+*.vcxproj.filters text eol=crlf
+
+# Binary — never touch.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.webp          binary
+*.ico           binary
+*.ttf           binary
+*.otf           binary
+*.woff          binary
+*.woff2         binary
+*.zip           binary

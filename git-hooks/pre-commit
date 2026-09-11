@@ -1,0 +1,42 @@
+#!/bin/sh
+# flu-harness pre-commit hook.
+#
+# Installed at .githooks/pre-commit. Enable with:
+#     git config core.hooksPath .githooks
+#
+# ── Why this file has no .ps1 or .cmd twin ──────────────────────────────────
+# Git executes hooks itself, not your shell. On Windows, Git for Windows runs
+# them through its bundled sh.exe no matter where you typed `git commit` — so
+# this one POSIX file behaves identically in PowerShell, cmd.exe and Git Bash.
+# Git cannot execute a .ps1 or a .cmd as a hook, which is why the Windows
+# variants next to this file (pre-commit.ps1 / pre-commit.cmd) are for running
+# the same gates by hand, not for core.hooksPath.
+#
+# ── Line endings ────────────────────────────────────────────────────────────
+# This file MUST be LF. With CRLF the shebang becomes "#!/bin/sh\r" and Git for
+# Windows fails with "cannot exec /bin/sh^M", which tells you nothing. The repo
+# pins this in .gitattributes; `flutter-doctor` check 21 verifies it.
+
+set -u
+
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+LIB="$HOOK_DIR/lib/quality.sh"
+
+if [ ! -f "$LIB" ]; then
+  printf '[FAIL] %s is missing — the harness hook library was not installed.\n' "$LIB" >&2
+  printf '       Re-run /flu-harness:new-flutter-project, or copy scripts/ into .githooks/lib/.\n' >&2
+  exit 1
+fi
+
+# Prefer direct execution, then an explicit sh, then sourcing in the shell git
+# already handed us. One of these resolves on every platform Git supports.
+if [ -x "$LIB" ]; then
+  exec "$LIB" --stage pre-commit "$@"
+fi
+
+if command -v sh >/dev/null 2>&1; then
+  exec sh "$LIB" --stage pre-commit "$@"
+fi
+
+set -- --stage pre-commit "$@"
+. "$LIB"

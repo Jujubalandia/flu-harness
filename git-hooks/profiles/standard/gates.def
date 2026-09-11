@@ -1,0 +1,8 @@
+# flu-harness gate plan - profile: standard
+#
+# One line per stage:  <stage>=<gate>[,<gate>...]
+# Read by scripts/quality.sh, scripts/quality.ps1 and scripts/quality.cmd.
+# All three shells parse this exact file, so the plan cannot drift between them.
+
+pre-commit=format,analyze
+pre-push=format,analyze,lint,test

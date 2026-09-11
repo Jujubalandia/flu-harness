@@ -1,0 +1,34 @@
+#!/bin/sh
+# flu-harness pre-push hook.
+#
+# Installed at .githooks/pre-push. Enable with:
+#     git config core.hooksPath .githooks
+#
+# Runs the full gate plan for the active profile, then asks whether the app was
+# actually exercised on a physical Android device. Set HARNESS_DEVICE_OK=1 to
+# pre-answer that question in scripted runs.
+#
+# See pre-commit for why this file has no .cmd/.ps1 twin and why it must be LF.
+
+set -u
+
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+LIB="$HOOK_DIR/lib/quality.sh"
+
+if [ ! -f "$LIB" ]; then
+  printf '[FAIL] %s is missing — the harness hook library was not installed.\n' "$LIB" >&2
+  printf '       Re-run /flu-harness:new-flutter-project, or copy scripts/ into .githooks/lib/.\n' >&2
+  exit 1
+fi
+
+# git passes <remote-name> <remote-url>; the library ignores them.
+if [ -x "$LIB" ]; then
+  exec "$LIB" --stage pre-push "$@"
+fi
+
+if command -v sh >/dev/null 2>&1; then
+  exec sh "$LIB" --stage pre-push "$@"
+fi
+
+set -- --stage pre-push "$@"
+. "$LIB"

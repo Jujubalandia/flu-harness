@@ -1,0 +1,59 @@
+# DECISIONS.md — {{APP_NAME}}
+
+Architecture, structure and feature decisions.
+Format: ISO date + context + decision + reason + rejected alternatives.
+
+---
+
+## ADR-001 — Core stack
+
+**Date:** {{START_DATE}}
+**Status:** Accepted
+
+**Decision:** Flutter (stable) + Dart + {{STATE_MGMT}} + {{NAVIGATION}} + {{BACKEND}}.
+
+**Reason:** one codebase for both stores, which is the whole reason the 20-day
+budget is possible. {{STATE_MGMT}} keeps state out of the widget tree.
+{{NAVIGATION}} gives declarative, testable, deep-linkable routes. {{BACKEND}}
+covers auth and data without running a server.
+
+**Rejected alternatives:**
+- React Native / Expo — viable, but a JS bridge and a native-module surface are
+  two more things that can break at 2am
+- Native (Kotlin + Swift) — two codebases, twice the D1-D20 work
+- {{STATE_MGMT}} alternatives — see ADR-002
+
+---
+
+## ADR-002 — State management: {{STATE_MGMT}}
+
+**Date:** {{START_DATE}}
+**Status:** Accepted
+
+**Decision:** {{STATE_MGMT}}.
+
+**Reason:** testable without a widget tree, no `BuildContext` in business logic,
+and the async/loading/error states are explicit rather than hand-rolled booleans.
+
+**Rejected alternatives:**
+- `setState` everywhere — fine for one screen, unmanageable at ten
+- InheritedWidget by hand — reinventing a worse version of this
+
+---
+
+## ADR-003 — Gate profile
+
+**Date:** {{START_DATE}}
+**Status:** Accepted
+
+**Decision:** hook profile `strict` unless reduced on purpose.
+
+**Reason:** the pre-push `build` gate is the only check that catches a Gradle or
+Xcode failure before CI does. The analyzer passing does not mean the app builds.
+
+**Rejected alternatives:**
+- `minimal` — appropriate for D1-D5, but it will not catch a broken build
+
+---
+
+<!-- Append new ADRs below. One decision per entry. -->

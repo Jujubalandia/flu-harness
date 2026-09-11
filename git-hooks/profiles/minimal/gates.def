@@ -1,0 +1,14 @@
+# flu-harness gate plan - profile: minimal
+#
+# One line per stage:  <stage>=<gate>[,<gate>...]
+# Read by scripts/quality.sh, scripts/quality.ps1 and scripts/quality.cmd.
+# All three shells parse this exact file, so the plan cannot drift between them.
+#
+# Stages:  pre-commit  -> runs on `git commit`
+#          pre-push    -> runs on `git push`
+#
+# Gates:   format analyze lint test build
+#          (see scripts/quality.sh for what each gate expands to)
+
+pre-commit=analyze
+pre-push=analyze,test

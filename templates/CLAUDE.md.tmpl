@@ -1,0 +1,161 @@
+# CLAUDE.md — {{APP_NAME}}
+
+## Project
+
+{{DESCRIPTION}}
+
+Flutter + Dart + {{STATE_MGMT}} + {{BACKEND}}.
+Target: 20 days from spec to store submission. Focus: {{MAIN_FOCUS}}.
+Shipping languages: {{LANGUAGES}}.
+
+## Stack
+
+- Flutter (stable channel) + Dart, null-safe, sound
+- {{STATE_MGMT}} for state management
+- {{NAVIGATION}} for routing
+- {{BACKEND}} for auth, data and backend logic
+- {{LOCAL_DB}} for local persistence
+- {{HTTP_CLIENT}} for networking
+- {{SERIALIZATION}} for models
+- {{SECURE_STORAGE}} for tokens and anything sensitive
+- {{I18N}} for localization
+- {{MONETIZATION}} for monetization
+- {{NOTIFICATIONS}} for notifications
+- {{TESTING}} for tests
+- {{LINTING}} for static analysis
+{{LIBS_ADICIONAIS}}
+
+## Code conventions
+
+- Widgets are classes with `const` constructors wherever the fields allow it.
+  `const` is not a micro-optimization in Flutter — it is what stops a rebuild
+  from walking the subtree.
+- One widget per file once a file passes ~200 lines. `lib/features/<feature>/`
+  holds `widgets/`, `models/`, `data/`, `providers/`.
+- Business logic never lives in `build()`. Extract it to a state notifier, a
+  controller, or a service.
+- File names: `snake_case.dart`. Types: `PascalCase`. Members: `camelCase`.
+  Private members: `_leadingUnderscore`.
+- **i18n from v0.** Never hardcode user-facing text in a widget. Every string
+  goes through the localization layer — `AppLocalizations.of(context)!.someKey`
+  or the project's equivalent. Keys in English, `camelCase`.
+- Format dates, numbers and currencies with `intl` and the *active* locale, never
+  with string concatenation.
+- Colors, spacing and text styles come from the theme (`Theme.of(context)`) or a
+  design-token file. No `Color(0xFF...)` literals in widgets.
+- Every `async` widget path handles three states: loading, error, data. A screen
+  that only renders the happy path is not finished.
+- Prefer `sealed` classes + pattern matching (`switch` expressions) to
+  `is`-chains and nullable flags.
+- No `dynamic` in public APIs. No `!` without a comment saying why it cannot be
+  null.
+
+## Domain types
+
+```dart
+// Fill these in on D3. Example shape:
+//
+// sealed class Result<T> { }
+// class Ok<T> extends Result<T> { final T value; }
+// class Err<T> extends Result<T> { final Object error; }
+//
+// class {{DOMAIN}} {
+//   final String id;
+//   final String userId;
+//   final DateTime createdAt;
+// }
+{{DOMAIN_TYPES}}
+```
+
+## Data layer
+
+{{BACKEND}} is the source of truth. Local storage is a cache, never the record.
+
+- Every table has row-level security / access rules enabled. No exceptions.
+- Migrations live in version control and are applied forward only.
+- Models are immutable, with `copyWith` and value equality (`freezed`, or
+  hand-written `==` / `hashCode`).
+
+## Non-negotiable rules
+
+- ❌ No API keys, tokens or secrets in source. Not in `lib/`, not in
+  `android/`, not in `ios/`. Use `--dart-define`, `--dart-define-from-file`, or
+  a backend.
+- ❌ Auth tokens go in {{SECURE_STORAGE}}, never in `shared_preferences`.
+  `shared_preferences` is plain text on disk.
+- ❌ Never commit `android/key.properties`, `*.keystore`, `*.jks`,
+  `google-services.json` or `GoogleService-Info.plist`. A leaked upload key ends
+  your ability to ship updates under that package name.
+- ❌ No `print()` in `lib/`. Use a logger, or `debugPrint` guarded by `kDebugMode`.
+- ❌ No new dependency without asking. Every package is app size and supply-chain
+  risk, and Flutter's tree-shaking cannot remove a package you imported.
+- ❌ No `// ignore:` without a comment on the same line explaining why.
+{{DOMAIN_RULES}}
+- ✅ Thumb-first: every primary action reachable one-handed, tap targets ≥ 48dp
+  (Material) / 44pt (Cupertino).
+- ✅ `Semantics` labels on every interactive element, localized like any other
+  string.
+- ✅ Haptic feedback on destructive and confirming actions, not on every tap.
+
+## Commit cadence
+
+- Messages in English, `type(scope): description` (conventional commits).
+- Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`.
+- One commit = one complete logical change. Never commit a tree that does not
+  compile.
+- Never `--no-verify`. If a gate fails, fix the code, not the gate.
+
+## Quality gates
+
+- `dart format --set-exit-if-changed` — clean
+- `flutter analyze --fatal-infos --fatal-warnings` — zero issues
+- `flutter test` — green
+- Before push: the pre-push plan for the active profile
+- Before a release build: `preflight` equivalent + manual Golden Paths +
+  `flutter-doctor` with zero FAILs
+
+The gates are declared in `.githooks/lib/gates.def` and executed by
+`.githooks/lib/quality.sh` (Git Bash), `quality.ps1` (PowerShell) and
+`quality.cmd` (cmd.exe) — the same plan in all three.
+
+**Never weaken a gate to make it pass.** If a check is wrong, fix the check in
+the same commit and say why. If the code is wrong, fix the code.
+
+## Execution environment
+
+- Editor: {{EDITOR}}
+- Primary shell: {{PRIMARY_SHELL}}
+- Windows notes: `docs/WINDOWS.md` in the flu-harness plugin (shell divergences,
+  the CRLF hook trap, and the Flutter SDK's broken sh wrapper)
+- Answer language: match the user; code, comments and commits in English.
+
+## How to invoke me
+
+- Skills: `/flu-harness:new-flutter-project`, `/flu-harness:flutter-doctor`
+- Broad code search: the `Explore` subagent
+- Anything non-trivial: plan before editing
+- Store metadata review: `store-metadata-reviewer` subagent
+- Marketing copy: `marketing-copywriter` subagent
+
+## Project docs
+
+- `docs/01-spec.md` — spec + market research
+- `docs/02-dev-plan.md` — 20-day plan + milestones
+- `docs/03-quality-gates.md` — quality pyramid + gate policy
+- `docs/04-testing.md` — test tiers + device matrix
+- `docs/05-store-launch.md` — Play Store + App Store checklist
+- `docs/06-marketing.md` — D-7 → D+14 calendar
+- `TODO.md` — active backlog
+- `DECISIONS.md` — ADRs
+
+## Do not
+
+- Do not run `flutter pub publish` — it is irreversible
+- Do not run `fastlane deliver` / `fastlane supply` without explicit confirmation
+- Do not force-push, ever
+- Do not rewrite git history (`filter-branch`, `filter-repo`) on a shared branch
+- Do not create `.md` files unless asked
+- Do not write explanatory comments in code — only the non-obvious "why"
+- Do not apply migrations directly against production
+- Do not bump the Flutter SDK constraint without asking; it changes the minimum
+  OS versions your users need

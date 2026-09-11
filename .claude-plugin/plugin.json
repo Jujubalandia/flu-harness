@@ -1,0 +1,12 @@
+{
+  "name": "flu-harness",
+  "version": "1.0.0",
+  "description": "Ship a Flutter app to the App Store + Play Store in <=20 days: /new-flutter-project wizard, /flutter-doctor health check, cross-shell quality gates that run natively in PowerShell, CMD and Git Bash on Windows.",
+  "author": {
+    "name": "Bruno Moura",
+    "url": "https://github.com/Jujubalandia"
+  },
+  "homepage": "https://github.com/Jujubalandia/flu-harness",
+  "repository": "https://github.com/Jujubalandia/flu-harness",
+  "keywords": ["flutter", "dart", "shipping", "quality-gates", "windows", "powershell"]
+}

@@ -1,0 +1,65 @@
+# TODO.md — {{APP_NAME}}
+
+> Last updated: {{START_DATE}}
+> Format: GitHub task list. `[x]` items stay visible 24h, then move to ✅ DONE.
+
+## 🔥 BLOCKERS (resolve today)
+
+- [ ] **D0** Push a placeholder build to Play **closed testing** — personal
+      accounts need 12 testers opted in for 14 continuous days before production.
+      This is the longest lead time in the whole plan. See `docs/05-store-launch.md` 🔥
+- [ ] **D0** Recruit 12 closed-test testers as a group **separate** from your
+      internal testers. Play makes internal testers ineligible for closed tests,
+      so the same people on both tracks means the 14-day clock never starts. 🔥
+- [ ] **D0** Confirm the app category does not require an organisation account
+      (health, finance, VPN and government apps do, and D-U-N-S takes up to 30 days) 🔥
+- [ ] **D0** Verify a physical Android device through the Play Console mobile app
+- [ ] **D1** Book a borrowed iPhone for D17-D18 — write the contact and the
+      slots here 🔥
+- [ ] **D1** Confirm the Apple Developer account is active (approval takes days)
+
+## 🎯 D1-D3 — Spec + setup
+
+- [ ] Fill in `docs/01-spec.md` completely
+- [ ] `flutter doctor` clean for the platforms you are shipping
+- [ ] Configure {{BACKEND}} and wire the client
+- [ ] Auth working (Google / Apple / email)
+- [ ] Routing in place with 2+ navigable screens
+- [ ] **M1 DoD:** the app runs on a physical Android device, login works, two
+      screens navigate
+
+## 🎯 D4-D10 — Core features
+
+- [ ] {{FEATURE_1}}
+- [ ] {{FEATURE_2}}
+- [ ] {{FEATURE_3}}
+
+## 🎯 D11-D13 — Polish
+
+- [ ] i18n complete — no hardcoded user-facing strings left
+- [ ] Loading and error states on every screen that fetches
+- [ ] Accessibility pass: semantics labels, 48dp targets, screen-reader walkthrough
+- [ ] Debug APK builds; `flutter analyze` clean
+
+## 🎯 D14-D15 — QA + store prep
+
+- [ ] Release build for Android (`.aab`) and iOS
+- [ ] Golden Paths validated on the release build, on a real device
+- [ ] Screenshots captured for both stores
+- [ ] Store metadata filled in `docs/05-store-launch.md`
+
+## 🎯 D16-D17 — Submission
+
+- [ ] Play Console: upload the AAB to the internal track, then promote
+- [ ] App Store: archive, upload to TestFlight, submit for review
+- [ ] Privacy policy published at a public URL
+- [ ] Build number and status logged in `DECISIONS.md`
+
+## 🎯 D18-D20 — Marketing
+
+- [ ] Landing page live
+- [ ] D-1 / D0 posts prepared (`docs/06-marketing.md`)
+- [ ] Product Hunt listing created
+- [ ] Store links verified from a device that has never installed the app
+
+## ✅ DONE (last 7 days)
